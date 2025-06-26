@@ -30,6 +30,10 @@
         
         /* Print-specific styles */
         @media print {
+            @page {
+                size: A4;
+                margin: 1.5cm;
+            }
             body, .printable-area {
                 background-color: #ffffff !important;
                 -webkit-print-color-adjust: exact;
@@ -47,10 +51,10 @@
                 top: 0;
                 width: 100%;
                 margin: 0;
-                padding: 20px;
+                padding: 0;
                 box-shadow: none;
                 border: none;
-                font-size: 11pt;
+                font-size: 10pt;
             }
             .no-print {
                 display: none !important;
@@ -58,21 +62,18 @@
             .print-single-column {
                  grid-template-columns: repeat(1, minmax(0, 1fr));
             }
-            .page-break-after {
-                page-break-after: always;
-            }
             .page-break-before {
                 page-break-before: always;
             }
-            .page-break-avoid {
+            .page-break-inside-avoid {
                 page-break-inside: avoid;
-            }
-             h1, h2, h3 {
-                page-break-after: avoid;
             }
             .question-card-print {
                 border: 1px solid #e5e7eb;
+                height: 80px; /* Fixed height for consistency */
             }
+            .print-mb-4 { margin-bottom: 1rem; }
+            .print-mb-8 { margin-bottom: 2rem; }
         }
     </style>
 </head>
@@ -146,32 +147,35 @@
         <div id="result-screen" class="screen hidden">
             <div class="printable-area bg-white text-gray-800 p-8 rounded-2xl">
                 <!-- Header -->
-                <div class="flex justify-between items-center mb-8">
-                    <img src="https://images.sympla.com.br/5cb4cef7c2bc0.png" alt="Logo GGV" class="h-10">
-                    <h1 class="text-2xl font-bold">Diagnóstico Comercial</h1>
-                    <div id="report-company-name" class="text-right font-semibold"></div>
+                <div class="flex items-center mb-8 print-mb-8">
+                    <img src="https://images.sympla.com.br/5cb4cef7c2bc0.png" alt="Logo GGV" class="h-12">
+                    <div class="text-center flex-grow">
+                        <h1 class="text-3xl font-bold">Diagnóstico Comercial</h1>
+                        <div id="report-company-name" class="text-lg font-semibold text-gray-600"></div>
+                    </div>
+                     <div class="w-12"></div> <!-- Spacer -->
                 </div>
 
                 <!-- Resumo das Perguntas -->
-                <div id="question-cards-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                <div id="question-cards-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8 print-mb-8">
                     <!-- Cards de perguntas gerados aqui -->
                 </div>
                 
                 <!-- Dashboard Principal -->
-                <div class="grid md:grid-cols-3 gap-8 mb-8">
+                <div class="grid md:grid-cols-3 gap-8 mb-8 print-mb-8 page-break-inside-avoid">
                     <div id="funnel-visual-container" class="md:col-span-1 space-y-4">
                         <!-- Gráfico de funil gerado aqui -->
                     </div>
                     <div id="score-visual-container" class="md:col-span-2 bg-gray-50 p-8 rounded-lg flex flex-col justify-center items-center border">
                         <h2 class="text-xl font-bold text-center mb-4">PERCENTUAL DE MATURIDADE COMERCIAL</h2>
                         <p id="result-score-visual" class="text-8xl font-extrabold">0%</p>
-                        <p class="text-center text-gray-500">0% a 30% = Baixa<br>31% a 75% = Regular<br>75% a 100% = Alta</p>
+                        <p class="text-center text-gray-500 text-sm">0% a 30% = Baixa<br>31% a 75% = Regular<br>75% a 100% = Alta</p>
                     </div>
                 </div>
 
-                <!-- Detalhes e Pilares (aparecem abaixo no dashboard e em nova página no PDF) -->
+                <!-- Detalhes e Pilares (em nova página no PDF) -->
                 <div class="page-break-before">
-                    <div id="context-container" class="mb-12 page-break-avoid">
+                    <div id="context-container" class="mb-12 print-mb-8 page-break-inside-avoid">
                          <h3 class="text-2xl font-bold mb-4 text-center">Contexto e Desafio</h3>
                         <div class="bg-blue-50 p-6 rounded-2xl border-l-4 border-blue-500 max-w-3xl mx-auto space-y-3">
                             <p><strong>Desafio Principal:</strong> <span id="result-challenge" class="text-gray-700 italic"></span></p>
@@ -179,7 +183,7 @@
                         </div>
                     </div>
 
-                    <div id="improvement-container" class="page-break-avoid">
+                    <div id="improvement-container" class="page-break-inside-avoid">
                         <h3 class="text-2xl font-bold mb-4 text-center">Pilares a Desenvolver</h3>
                         <ul id="improvement-points" class="space-y-4 max-w-3xl mx-auto"></ul>
                     </div>
@@ -320,19 +324,16 @@
             funnelResultsContainer.innerHTML = '';
             improvementPointsContainer.innerHTML = '';
 
-            // Gerar Cards de Perguntas
             answers.forEach(item => {
                 const question = questions.find(q => q.id === item.id);
                 let cardColor = 'bg-gray-500';
                 if (item.answer === 10) cardColor = 'bg-green-500';
                 else if (item.answer === 5) cardColor = 'bg-yellow-500';
                 else if (item.answer === 0) cardColor = 'bg-red-500';
-
                 const cardEl = `<div class="${cardColor} p-3 rounded-lg text-xs text-white text-center flex items-center justify-center h-full question-card-print">${question.text}</div>`;
                 questionCardsContainer.innerHTML += cardEl;
             });
 
-            // Gerar Gráfico de Funil
             const funnelCategories = { 'Prospecção': [], 'Qualificação': [], 'Fechamento': [], 'Retenção': [] };
             answers.forEach(item => {
                 const question = questions.find(q => q.id === item.id);
@@ -350,20 +351,10 @@
                 if (categoryScore <= 30) barColor = 'bg-red-500';
                 else if (categoryScore <= 75) barColor = 'bg-yellow-500';
 
-                const funnelEl = `
-                    <div class="page-break-avoid">
-                        <p class="mb-1 font-semibold">${category.toUpperCase()}</p>
-                        <div class="w-full bg-gray-200 rounded-full h-6 border">
-                            <div class="${barColor} h-full rounded-full flex items-center justify-end pr-2" style="width: ${categoryScore}%">
-                                <span class="text-sm font-bold text-white">${categoryScore}%</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const funnelEl = `<div class="page-break-inside-avoid"><p class="mb-1 font-semibold">${category.toUpperCase()}</p><div class="w-full bg-gray-200 rounded-full h-6 border"><div class="${barColor} h-full rounded-full flex items-center justify-end pr-2" style="width: ${categoryScore}%"><span class="text-sm font-bold text-white">${categoryScore}%</span></div></div></div>`;
                 funnelResultsContainer.innerHTML += funnelEl;
             }
 
-            // Gerar Pilares a Desenvolver
             let hasImprovementPoints = false;
             answers.forEach(item => {
                 if (item.answer < 10) {
@@ -371,12 +362,12 @@
                     const question = questions.find(q => q.id === item.id);
                     let insightText = improvementInsights[item.id] || "Melhorar este pilar é fundamental para a saúde do processo comercial.";
                     insightText = insightText.replace(/{challenge}/g, `<strong>${context.commercialChallenge || 'crescer'}</strong>`).replace(/{teamSize}/g, `<strong>${context.teamSize || 'seu'}</strong>`).replace(/{product}/g, `<strong>${context.productSold || 'seus produtos/serviços'}</strong>`).replace(/{targetAudience}/g, `<strong>${context.targetAudience || 'seus clientes'}</strong>`);
-                    const pointEl = `<li class="p-4 bg-gray-50 rounded-lg page-break-avoid border"><div class="flex items-start"><div><p class="font-semibold">${question.text}</p><p class="text-sm text-gray-500">Status: ${item.answer === 0 ? 'Não implementado' : 'Parcialmente implementado'}</p></div></div><div class="mt-3 pl-4 text-sm text-gray-700 bg-gray-100 p-3 rounded-md border-l-2 border-blue-400"><p><strong class="font-semibold text-blue-600">Por que isso é importante?</strong><br>${insightText}</p></div></li>`;
+                    const pointEl = `<li class="p-4 bg-gray-50 rounded-lg page-break-inside-avoid border"><div class="flex items-start"><div><p class="font-semibold">${question.text}</p><p class="text-sm text-gray-500">Status: ${item.answer === 0 ? 'Não implementado' : 'Parcialmente implementado'}</p></div></div><div class="mt-3 pl-4 text-sm text-gray-700 bg-gray-100 p-3 rounded-md border-l-2 border-blue-400"><p><strong class="font-semibold text-blue-600">Por que isso é importante?</strong><br>${insightText}</p></div></li>`;
                     improvementPointsContainer.innerHTML += pointEl;
                 }
             });
             if(!hasImprovementPoints) {
-                 improvementPointsContainer.innerHTML = `<li class="flex items-center p-4 bg-green-50 rounded-lg text-green-700 page-break-avoid border"><svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>Parabéns! Todos os pilares estratégicos estão bem estruturados.</li>`;
+                 improvementPointsContainer.innerHTML = `<li class="flex items-center p-4 bg-green-50 rounded-lg text-green-700 page-break-inside-avoid border"><svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>Parabéns! Todos os pilares estratégicos estão bem estruturados.</li>`;
             }
         }
         
